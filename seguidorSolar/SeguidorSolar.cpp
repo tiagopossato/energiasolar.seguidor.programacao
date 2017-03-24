@@ -4,109 +4,170 @@
 #include "WProgram.h"
 #endif
 #include "SeguidorSolar.h"
+#include <PID_v1.h>
 
- void SeguidorSolar::init(PonteH _ponte, uint8_t _pinoPotenciometro, uint8_t _pinoLdr1, uint8_t _pinoLdr2, uint8_t _pinoFdc1, uint8_t _pinoFdc2){
-	this->ponte = _ponte;
+/**
+   Inicia um eixo, configurando os pinos de entrada e saída
+*/
+void SeguidorSolar::iniciaEixo(Eixo *eixo) {
+  eixo->motor->direcao = true;
+  eixo->motor->velocidade = 0;
+  pinMode(eixo->motor->direita, OUTPUT);
+  pinMode(eixo->motor->esquerda, OUTPUT);
+  pinMode(eixo->motor->habilita, OUTPUT);
 
-	this->ponte.right_dir = true;
-	this->ponte.left_dir = true;
-	pinMode(this->ponte.left1, OUTPUT);
-	pinMode(this->ponte.left2, OUTPUT);
-	pinMode(this->ponte.right1, OUTPUT);
-	pinMode(this->ponte.right2, OUTPUT);
-	pinMode(this->ponte.left_en, OUTPUT);
-	pinMode(this->ponte.right_en, OUTPUT);
+  pinMode(eixo->sensores->fdc1, INPUT);
+  pinMode(eixo->sensores->fdc2, INPUT);
 
-	this->pot1.pino = _pinoPotenciometro;
-	this->ldr1 = _pinoLdr1;
-	this->ldr2 = _pinoLdr2;
-	this->fdc1 = _pinoFdc1;
-	pinMode(this->fdc1, INPUT);
-	this->fdc2 = _pinoFdc2;
-	pinMode(this->fdc2, INPUT);
 }
 
 /**
-   Método que executa uma auto verificação no sistema, com os seguintes passos:
+   Método que executa uma auto verificação no exito, com os seguintes passos:
    Vira o painel para o oeste até chegar no fim de curso
    Verifica o valor no potenciômetro e armazena como valor máximo
    Vira o painel para leste até chegar no fim de curso
    Verifica o valor no potenciômetro e armazena como valor mínimo
 */
- void SeguidorSolar::autoVerificacao(){	 
-	 while(digitalRead(this->fdc1)){
-		 this->controlaMotor(128,0);
-	 }
-	 this->pot1.maximo = analogRead(this->pot1.pino);
-	 
-	while(digitalRead(this->fdc2)){
-		this->controlaMotor(-128,0);
-	 }
-	 this->pot1.minimo = analogRead(this->pot1.pino);
-	 this->paraMotor();
- }
+void SeguidorSolar::autoVerificacao(Eixo *eixo) {
+  Serial.println("autoVerificacao");
+  while (digitalRead(eixo->sensores->fdc1)) {
+    this->controlaMotor(eixo, 255);
+  }
+  eixo->pot->maximo = analogRead(eixo->pot->pino);
 
-void SeguidorSolar::controlaMotor (int16_t left, int16_t right) {
-	if (left < 0) {
-		left = -left;
-		if (this->ponte.left_dir == true) {
-			this->ponte.left_dir = false;
-			this->ponte.left = 0;
-		}
-		digitalWrite (this->ponte.left1, HIGH);
-		digitalWrite (this->ponte.left2, LOW);
-	} else {
-		if (this->ponte.left_dir == false) {
-			this->ponte.left_dir = true;
-			this->ponte.left = 0;
-		}
-		digitalWrite (this->ponte.left1, LOW);
-		digitalWrite (this->ponte.left2, HIGH);
-	}
+  while (digitalRead(eixo->sensores->fdc2)) {
+    this->controlaMotor(eixo, -255);
+  }
+  eixo->pot->minimo = analogRead(eixo->pot->pino);
+  this->paraMotor(eixo->motor);
 
-	if (right < 0) {
-		right = -right;
-		if (this->ponte.right_dir == true) {
-			this->ponte.right_dir = false;
-			this->ponte.right = 0;
-		}
-		digitalWrite (this->ponte.right1, HIGH);
-		digitalWrite (this->ponte.right2, LOW);
-	} else {
-		if (this->ponte.right_dir == false) {
-			this->ponte.right_dir = true;
-			this->ponte.right = 0;
-		}
-		digitalWrite (this->ponte.right1, LOW);
-		digitalWrite (this->ponte.right2, HIGH);
-	}
-
-	//partida suave
-	int16_t i=0;
-	if(this->ponte.left != left){
-		for(i=0;i<left;i++){
-			analogWrite (this->ponte.left_en, i);
-			delay(5);
-		}
-	}
-	if(this->ponte.right != right){
-		for(i=0;i<right;i++){
-			analogWrite (this->ponte.right_en, i);
-			delay(5);
-		}
-	}
-	
-	this->ponte.left = left;
-	this->ponte.right = right;
+  this->mostraPotenciometro(eixo);
 }
 
-void SeguidorSolar::paraMotor () {
-	digitalWrite (this->ponte.left1, LOW);
-	digitalWrite (this->ponte.left2, LOW);
-	digitalWrite (this->ponte.right1, LOW);
-	digitalWrite (this->ponte.right2, LOW);
-	this->ponte.left = 0;
-	this->ponte.right = 0;
-	analogWrite (this->ponte.left_en, this->ponte.left);
-	analogWrite (this->ponte.right_en, this->ponte.right);
+/**
+   Move o motor do eixo para a posicao desejada
+   Recebe como parâmetro um eixo e a nova posicao em %
+*/
+void SeguidorSolar::moveParaPosicao(Eixo *eixo, uint8_t novaPosicao) {
+  if (novaPosicao > 100)novaPosicao = 100;
+  unsigned long previousMillis = millis();
+  //  unsigned long currentMillis = millis();
+  static uint16_t timeOut = 20000;
+  double setpoint;
+  double input;
+  double output;
+  PID myPID(&input, &output, &setpoint, 3, 4.25, 1, DIRECT);
+  myPID.SetOutputLimits(-255, 255);
+  //turn the PID on
+  myPID.SetMode(AUTOMATIC);
+
+  this->lePotenciometro(eixo);
+  input = eixo->posicao;
+  setpoint = novaPosicao;
+
+  while (eixo->posicao != novaPosicao) {
+    if (millis() - previousMillis >= timeOut) {
+      Serial.println("timeOut");
+      break;
+    }
+    this->lePotenciometro(eixo);
+    input = eixo->posicao;
+    myPID.Compute();
+    this->controlaMotor(eixo, output);
+  }
+
+  this->paraMotor(eixo->motor);
+  this->mostraPotenciometro(eixo);
+}
+
+/*
+   Realiza a leitura e o tratamento do sinal do potenciometro e
+   salva o valor na posicao do eixo recebido como parâmetro
+*/
+void SeguidorSolar::lePotenciometro(Eixo *eixo) {
+  eixo->posicao = constrain(map(analogRead(eixo->pot->pino), eixo->pot->minimo, eixo->pot->maximo, 0, 100), 0, 100);
+}
+
+void SeguidorSolar::mostraPotenciometro(Eixo *eixo) {
+  this->lePotenciometro(eixo);
+  //  Serial.print("Pot: Max: ");
+  //  Serial.print(eixo->pot->maximo);
+  //  Serial.print(", Min: ");
+  //  Serial.print(eixo->pot->minimo);
+  Serial.print("Posicao atual: ");
+  Serial.print(eixo->posicao);
+  Serial.println("%");
+}
+
+void SeguidorSolar::loopSeguidor(Eixo *eixo) {
+  int16_t diferenca = analogRead(eixo->sensores->ldr1) - analogRead(eixo->sensores->ldr2);
+  Serial.print("Diferenca: ");
+  Serial.println(diferenca);
+
+  static double setpoint;
+  static double input;
+  static  double output;
+  static PID myPID(&input, &output, &setpoint, 1, 0.05, 0.25, DIRECT);
+  myPID.SetOutputLimits(-255, 255);
+  //turn the PID on
+  myPID.SetMode(AUTOMATIC);
+
+  input = diferenca;
+  setpoint = 0;
+  myPID.Compute();
+  this->controlaMotor(eixo, output);
+
+}
+
+
+/**
+   Gira o motor do eixo recebido por parâmetro
+   A velocidade é um valor que varia de -255 a 255, sendo que
+   valores abaixo de 0 invertem o sentido de giro do motor
+*/
+void SeguidorSolar::controlaMotor(Eixo *eixo, int16_t velocidade) {
+  if (velocidade < 0) {
+    if (velocidade < -255) velocidade = -255;
+    if (digitalRead(eixo->sensores->fdc2) == false) {
+      this->paraMotor(eixo->motor);
+      return;
+    }
+    velocidade = -velocidade;
+    if (eixo->motor->direcao == true) {
+      eixo->motor->direcao = false;
+      eixo->motor->velocidade = 0;
+    }
+    digitalWrite (eixo->motor->direita, HIGH);
+    digitalWrite (eixo->motor->esquerda, LOW);
+  } else {
+    if (velocidade > 255) velocidade = 255;
+    if (digitalRead(eixo->sensores->fdc1) == false) {
+      this->paraMotor(eixo->motor);
+      return;
+    }
+    if (eixo->motor->direcao == false) {
+      eixo->motor->direcao = true;
+      eixo->motor->velocidade = 0;
+    }
+    digitalWrite (eixo->motor->direita, LOW);
+    digitalWrite (eixo->motor->esquerda, HIGH);
+  }
+
+  //partida suave
+  int16_t i = 0;
+  if (eixo->motor->velocidade != velocidade) {
+    for (i = 0; i < velocidade; i++) {
+      analogWrite(eixo->motor->habilita, i);
+      delayMicroseconds(500);
+    }
+  }
+
+  eixo->motor->velocidade = velocidade;
+}
+
+void SeguidorSolar::paraMotor (Motor *motor) {
+  digitalWrite (motor->direita, LOW);
+  digitalWrite (motor->esquerda, LOW);
+  motor->velocidade = 0;
+  analogWrite (motor->habilita, motor->velocidade);
 }
