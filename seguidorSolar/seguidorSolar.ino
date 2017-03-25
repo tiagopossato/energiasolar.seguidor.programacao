@@ -1,18 +1,27 @@
-#include "SeguidorSolar.h"
+/**
+ * TODO: 
+ * 1: Criar método para procurar o ponto com maior incidência solar. 
+ *    Percorrer todo o trajeto, após a autoVerificação e armazenar a 
+ *    posição do eixo onde existir a menor diferença entre os sensores 
+ *    e ao mesmo tempo o maior índice de incidência de luz.
+ */
 
+#include "SeguidorSolar.h"
 #define LDR1 A0
 #define LDR2 A1
 #define POT1 A4
 #define FDC1 2
 #define FDC2 3
-#define ENA 6
-#define IN1 9
-#define IN2 10
-#define ENB 13
+#define IN1 13
+#define IN2 12
 #define IN3 11
-#define IN4 12
-const long interval = 500;
+#define IN4 10
+#define ENA 9
+#define ENB 6
 
+const long interval = 10;
+
+/**********CRIAÇÃO DOS OBJETOS E DO EIXO**********/
 //cria objeto do motor do eixo que acompanha o sol diariamente
 Motor motorDiario;
 //cria objeto para o potenciometro do eixo que acompanha o sol diariamente
@@ -21,13 +30,16 @@ Potenciometro potDiario;
 Sensores senDiario;
 //cria o eixo que acompanha o sol diariamente
 Eixo eixoDiario;
-//Cria controlador da placa do seguidor solar
+/***************************************************/
+
+/**********CONTROLADOR DE PLACA SOLAR**********/
 SeguidorSolar seguidor;
 
 void setup () {
   //inicia
   Serial.begin(115200);
 
+  /**********INSERE OS PARÂMETROS DOS OBEJTOS**********/
   motorDiario.direita = IN1;
   motorDiario.esquerda = IN2;
   motorDiario.habilita = ENA;
@@ -39,9 +51,11 @@ void setup () {
   eixoDiario.motor = &motorDiario;
   eixoDiario.pot = &potDiario;
   eixoDiario.sensores = &senDiario;
+  /***************************************************/
 
+  /**********INICIA O EIXO**********/
   seguidor.iniciaEixo(&eixoDiario);
-  seguidor.autoVerificacao(&eixoDiario);
+  //seguidor.autoVerificacao(&eixoDiario);
 }
 
 void loop () {
@@ -54,11 +68,10 @@ void loop () {
     seguidor.moveParaPosicao(&eixoDiario, pos);
   }
 
-
   if (currentMillis - previousMillis >= interval) {
     // save the last time you blinked the LED
     previousMillis = currentMillis;
-    seguidor.loopSeguidor(&eixoDiario);
+    seguidor.segueLuz(&eixoDiario);
   }
 }
 

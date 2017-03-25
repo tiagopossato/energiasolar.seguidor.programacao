@@ -99,15 +99,29 @@ void SeguidorSolar::mostraPotenciometro(Eixo *eixo) {
   Serial.println("%");
 }
 
-void SeguidorSolar::loopSeguidor(Eixo *eixo) {
+void SeguidorSolar::segueLuz(Eixo *eixo) {
   int16_t diferenca = analogRead(eixo->sensores->ldr1) - analogRead(eixo->sensores->ldr2);
+  if (abs(diferenca) < 5) {
+    this->paraMotor(eixo->motor);
+    return;
+  }
   Serial.print("Diferenca: ");
   Serial.println(diferenca);
+  if (diferenca < 0) {
+    this->controlaMotor(eixo, 255);
+  }
+  else {
+    this->controlaMotor(eixo, -255);
+  }
+  //  this->controlaMotor(eixo, map(diferenca, -30, 30, 255, -255));
+  return;
+
 
   static double setpoint;
   static double input;
   static  double output;
-  static PID myPID(&input, &output, &setpoint, 1, 0.05, 0.25, DIRECT);
+  static PID myPID(&input, &output, &setpoint, 1, 0.05, 0.25, DIRECT);//modo cnservador
+  //static PID myPID(&input, &output, &setpoint, 4, 0.2, 1, DIRECT); // modo agressivo
   myPID.SetOutputLimits(-255, 255);
   //turn the PID on
   myPID.SetMode(AUTOMATIC);

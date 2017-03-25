@@ -36,7 +36,7 @@ class SeguidorSolar
     void autoVerificacao(Eixo *eixo);
     void moveParaPosicao(Eixo *eixo, uint8_t posicao);
     void mostraPotenciometro(Eixo *eixo);
-    void loopSeguidor(Eixo *eixo);
+    void segueLuz(Eixo *eixo);
 
   protected:
     void lePotenciometro(Eixo *eixo);
