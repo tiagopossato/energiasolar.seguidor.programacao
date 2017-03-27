@@ -101,12 +101,10 @@ void SeguidorSolar::mostraPotenciometro(Eixo *eixo) {
 
 void SeguidorSolar::segueLuz(Eixo *eixo) {
   int16_t diferenca = analogRead(eixo->sensores->ldr1) - analogRead(eixo->sensores->ldr2);
-  if (abs(diferenca) < 5) {
+  if (abs(diferenca) < 1) {
     this->paraMotor(eixo->motor);
     return;
   }
-  Serial.print("Diferenca: ");
-  Serial.println(diferenca);
   if (diferenca < 0) {
     this->controlaMotor(eixo, 255);
   }

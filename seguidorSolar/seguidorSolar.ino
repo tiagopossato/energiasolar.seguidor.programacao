@@ -7,11 +7,13 @@
  */
 
 #include "SeguidorSolar.h"
-#define LDR1 A0
-#define LDR2 A1
+#define LDR1 A2
+#define LDR2 A3
 #define POT1 A4
-#define FDC1 2
-#define FDC2 3
+#define FDC1 5
+#define FDC2 4
+#define FDC3 3
+#define FDC4 2
 #define IN1 13
 #define IN2 12
 #define IN3 11
@@ -37,7 +39,7 @@ SeguidorSolar seguidor;
 
 void setup () {
   //inicia
-  Serial.begin(115200);
+  Serial.begin(9600);
 
   /**********INSERE OS PARÂMETROS DOS OBEJTOS**********/
   motorDiario.direita = IN1;
@@ -72,6 +74,10 @@ void loop () {
     // save the last time you blinked the LED
     previousMillis = currentMillis;
     seguidor.segueLuz(&eixoDiario);
+    Serial.print("LDR1: ");
+    Serial.println(analogRead(LDR1));
+    Serial.print("LDR2: ");
+    Serial.println(analogRead(LDR2));
   }
 }
 
