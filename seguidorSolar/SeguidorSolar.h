@@ -1,6 +1,7 @@
 #ifndef SeguidorSolar_h
 #define SeguidorSolar_h
 
+
 struct Motor {
   uint8_t direita;
   uint8_t esquerda;

@@ -1,11 +1,11 @@
 /**
- * TODO: 
- * 1: Criar método para procurar o ponto com maior incidência solar. 
- *    Percorrer todo o trajeto, após a autoVerificação e armazenar a 
- *    posição do eixo onde existir a menor diferença entre os sensores 
- *    e ao mesmo tempo o maior índice de incidência de luz.
- */
-
+   TODO:
+   1: Criar método para procurar o ponto com maior incidência solar.
+      Percorrer todo o trajeto, após a autoVerificação e armazenar a
+      posição do eixo onde existir a menor diferença entre os sensores
+      e ao mesmo tempo o maior índice de incidência de luz.
+*/
+#define DEBUG
 #include "SeguidorSolar.h"
 #define LDR1 A2
 #define LDR2 A3
@@ -39,8 +39,9 @@ SeguidorSolar seguidor;
 
 void setup () {
   //inicia
+#if defined(DEBUG)
   Serial.begin(9600);
-
+#endif
   /**********INSERE OS PARÂMETROS DOS OBEJTOS**********/
   motorDiario.direita = IN1;
   motorDiario.esquerda = IN2;
@@ -52,6 +53,8 @@ void setup () {
   senDiario.ldr2 = LDR2;
   eixoDiario.motor = &motorDiario;
   eixoDiario.pot = &potDiario;
+  eixoDiario.pot->minimo = 0;
+  eixoDiario.pot->maximo = 1023;
   eixoDiario.sensores = &senDiario;
   /***************************************************/
 
@@ -63,22 +66,35 @@ void setup () {
 void loop () {
   static int pos;
   static unsigned long previousMillis = 0;
+  static unsigned long previousMillis2 = 0;
   unsigned long currentMillis = millis();
+#if defined(DEBUG)
   if (Serial.available()) {
     // set the brightness of the LED:
     pos = Serial.parseInt();
     seguidor.moveParaPosicao(&eixoDiario, pos);
   }
+#endif
 
   if (currentMillis - previousMillis >= interval) {
     // save the last time you blinked the LED
     previousMillis = currentMillis;
     seguidor.segueLuz(&eixoDiario);
+    //Serial.println(analogRead(LDR1)-analogRead(LDR2));
+
+  }
+  
+#if defined(DEBUG)
+  if (currentMillis - previousMillis2 >= 1000) {
+    // save the last time you blinked the LED
+    previousMillis2 = currentMillis;
     Serial.print("LDR1: ");
     Serial.println(analogRead(LDR1));
     Serial.print("LDR2: ");
     Serial.println(analogRead(LDR2));
+    seguidor.mostraPotenciometro(&eixoDiario);
   }
+#endif
 }
 
 unsigned char lerLdr(unsigned char ldr) {

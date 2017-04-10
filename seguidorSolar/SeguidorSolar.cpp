@@ -5,7 +5,7 @@
 #endif
 #include "SeguidorSolar.h"
 #include <PID_v1.h>
-
+#define DEBUG
 /**
    Inicia um eixo, configurando os pinos de entrada e saída
 */
@@ -29,7 +29,9 @@ void SeguidorSolar::iniciaEixo(Eixo *eixo) {
    Verifica o valor no potenciômetro e armazena como valor mínimo
 */
 void SeguidorSolar::autoVerificacao(Eixo *eixo) {
+#if defined(DEBUG)
   Serial.println("autoVerificacao");
+#endif
   while (digitalRead(eixo->sensores->fdc1)) {
     this->controlaMotor(eixo, 255);
   }
@@ -67,7 +69,9 @@ void SeguidorSolar::moveParaPosicao(Eixo *eixo, uint8_t novaPosicao) {
 
   while (eixo->posicao != novaPosicao) {
     if (millis() - previousMillis >= timeOut) {
+#if defined(DEBUG)
       Serial.println("timeOut");
+#endif
       break;
     }
     this->lePotenciometro(eixo);
@@ -94,53 +98,65 @@ void SeguidorSolar::mostraPotenciometro(Eixo *eixo) {
   //  Serial.print(eixo->pot->maximo);
   //  Serial.print(", Min: ");
   //  Serial.print(eixo->pot->minimo);
+#if defined(DEBUG)
   Serial.print("Posicao atual: ");
   Serial.print(eixo->posicao);
   Serial.println("%");
+#endif
 }
 
 void SeguidorSolar::segueLuz(Eixo *eixo) {
   int16_t diferenca = analogRead(eixo->sensores->ldr1) - analogRead(eixo->sensores->ldr2);
-  if (abs(diferenca) < 3) {
+  if (abs(diferenca) < 5) {
     this->paraMotor(eixo->motor);
     return;
   }
-  if (diferenca < 0 && diferenca > -25 ) {
-    this->controlaMotor(eixo, 100);
-  }
-  if (diferenca < -25 && diferenca > -50 ) {
-    this->controlaMotor(eixo, 150);
-  }
+
   if (diferenca < -50 ) {
     this->controlaMotor(eixo, 255);
+    return;
   }
+
+  if (diferenca > -50 && diferenca < -25 ) {
+    this->controlaMotor(eixo, 150);
+    return;
+  }
+
+  if (diferenca > -25 && diferenca < 0 ) {
+    this->controlaMotor(eixo, 100);
+    return;
+  }
+
+
   if (diferenca > 0 && diferenca < 25 ) {
     this->controlaMotor(eixo, -100);
   }
   if (diferenca > 25 && diferenca < 50 ) {
     this->controlaMotor(eixo, -150);
+    return;
   }
+
   if (diferenca > 50 ) {
     this->controlaMotor(eixo, -255);
+    return;
   }
 
   //  this->controlaMotor(eixo, map(diferenca, -30, 30, 255, -255));
-  return;
 
-
-  static double setpoint;
-  static double input;
-  static  double output;
-  static PID myPID(&input, &output, &setpoint, 1, 0.05, 0.25, DIRECT);//modo cnservador
-  //static PID myPID(&input, &output, &setpoint, 4, 0.2, 1, DIRECT); // modo agressivo
-  myPID.SetOutputLimits(-255, 255);
-  //turn the PID on
-  myPID.SetMode(AUTOMATIC);
-
-  input = diferenca;
-  setpoint = 0;
-  myPID.Compute();
-  this->controlaMotor(eixo, output);
+  //
+  //  static double setpoint;
+  //  static double input;
+  //  static  double output;
+  //  static PID myPID(&input, &output, &setpoint, 1, 0.05, 0.25, DIRECT);//modo cnservador
+  //  //static PID myPID(&input, &output, &setpoint, 4, 0.2, 1, DIRECT); // modo agressivo
+  //  myPID.SetOutputLimits(-255, 255);
+  //  //turn the PID on
+  //  myPID.SetMode(AUTOMATIC);
+  //
+  //  input = diferenca;
+  //  setpoint = 0;
+  //  myPID.Compute();
+  //  this->controlaMotor(eixo, output);
 
 }
 
@@ -151,9 +167,10 @@ void SeguidorSolar::segueLuz(Eixo *eixo) {
    valores abaixo de 0 invertem o sentido de giro do motor
 */
 void SeguidorSolar::controlaMotor(Eixo *eixo, int16_t velocidade) {
+  this->lePotenciometro(eixo);
   if (velocidade < 0) {
     if (velocidade < -255) velocidade = -255;
-    if (digitalRead(eixo->sensores->fdc2) == false) {
+    if (digitalRead(eixo->sensores->fdc2) == false || eixo->posicao < 20) {
       this->paraMotor(eixo->motor);
       return;
     }
@@ -166,7 +183,7 @@ void SeguidorSolar::controlaMotor(Eixo *eixo, int16_t velocidade) {
     digitalWrite (eixo->motor->esquerda, LOW);
   } else {
     if (velocidade > 255) velocidade = 255;
-    if (digitalRead(eixo->sensores->fdc1) == false) {
+    if (digitalRead(eixo->sensores->fdc1) == false || eixo->posicao > 65) {
       this->paraMotor(eixo->motor);
       return;
     }
