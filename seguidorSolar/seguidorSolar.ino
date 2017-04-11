@@ -53,8 +53,8 @@ void setup () {
   senDiario.ldr2 = LDR2;
   eixoDiario.motor = &motorDiario;
   eixoDiario.pot = &potDiario;
-  eixoDiario.pot->minimo = 0;
-  eixoDiario.pot->maximo = 1023;
+  eixoDiario.pot->minimo = 100;
+  eixoDiario.pot->maximo = 687;
   eixoDiario.sensores = &senDiario;
   /***************************************************/
 
@@ -74,16 +74,16 @@ void loop () {
     pos = Serial.parseInt();
     seguidor.moveParaPosicao(&eixoDiario, pos);
   }
+
 #endif
 
-  if (currentMillis - previousMillis >= interval) {
-    // save the last time you blinked the LED
-    previousMillis = currentMillis;
-    seguidor.segueLuz(&eixoDiario);
-    //Serial.println(analogRead(LDR1)-analogRead(LDR2));
+  //  if (currentMillis - previousMillis >= interval) {
+  //    // save the last time you blinked the LED
+  //    previousMillis = currentMillis;
+  //    seguidor.segueLuz(&eixoDiario);
+  //    //Serial.println(analogRead(LDR1)-analogRead(LDR2));
+  //  }
 
-  }
-  
 #if defined(DEBUG)
   if (currentMillis - previousMillis2 >= 1000) {
     // save the last time you blinked the LED

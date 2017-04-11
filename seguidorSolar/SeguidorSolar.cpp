@@ -170,7 +170,7 @@ void SeguidorSolar::controlaMotor(Eixo *eixo, int16_t velocidade) {
   this->lePotenciometro(eixo);
   if (velocidade < 0) {
     if (velocidade < -255) velocidade = -255;
-    if (digitalRead(eixo->sensores->fdc2) == false || eixo->posicao < 20) {
+    if (digitalRead(eixo->sensores->fdc2) == false || eixo->posicao < 5) {
       this->paraMotor(eixo->motor);
       return;
     }
@@ -183,7 +183,7 @@ void SeguidorSolar::controlaMotor(Eixo *eixo, int16_t velocidade) {
     digitalWrite (eixo->motor->esquerda, LOW);
   } else {
     if (velocidade > 255) velocidade = 255;
-    if (digitalRead(eixo->sensores->fdc1) == false || eixo->posicao > 65) {
+    if (digitalRead(eixo->sensores->fdc1) == false || eixo->posicao > 95) {
       this->paraMotor(eixo->motor);
       return;
     }
