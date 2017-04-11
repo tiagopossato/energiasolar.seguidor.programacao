@@ -107,7 +107,7 @@ void SeguidorSolar::mostraPotenciometro(Eixo *eixo) {
 
 void SeguidorSolar::segueLuz(Eixo *eixo) {
   int16_t diferenca = analogRead(eixo->sensores->ldr1) - analogRead(eixo->sensores->ldr2);
-  if (abs(diferenca) < 5) {
+  if (abs(diferenca) < 2) {
     this->paraMotor(eixo->motor);
     return;
   }
