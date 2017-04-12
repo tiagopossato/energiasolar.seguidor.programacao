@@ -30,7 +30,11 @@ Eixo eixoDiario;
 /**********CONTROLADOR DE PLACA SOLAR**********/
 SeguidorSolar seguidor;
 
+String inputString = "";         // a string to hold incoming data
+
+
 void setup () {
+  inputString.reserve(3);
   //inicia
   Serial.begin(9600);
   /**********INSERE OS PARÂMETROS DOS OBEJTOS**********/
@@ -51,6 +55,7 @@ void setup () {
   //seguidor.autoVerificacao(&eixoDiario);
 }
 
+
 void loop () {
   static uint8_t pos;
   static uint8_t lastPos;
@@ -59,14 +64,29 @@ void loop () {
   unsigned long currentMillis = millis();
 
   if (Serial.available()) {
-    pos = Serial.parseInt();
-    if (abs(lastPos - pos) >= 5) {
-      seguidor.moveParaPosicao(&eixoDiario, pos);
-      eixoDiario.posicao.minima = eixoDiario.posicao.atual - 5;
-      eixoDiario.posicao.maxima = eixoDiario.posicao.atual + 5;
-      lastPos = pos;
+    // get the new byte:
+    char inChar = (char)Serial.read();
+    // add it to the inputString:
+
+    Serial.print(inChar);
+    if (inChar != '\n')inputString += inChar;
+
+    // if the incoming character is a newline, set a flag
+    // so the main loop can do something about it:
+    if (inChar == '\n') {
+      if (inputString.length() >= 1) {
+        pos = inputString.toInt();
+        if (abs(lastPos - pos) >= 5) {
+          seguidor.moveParaPosicao(&eixoDiario, pos);
+          eixoDiario.posicao.minima = eixoDiario.posicao.atual - 5;
+          eixoDiario.posicao.maxima = eixoDiario.posicao.atual + 5;
+          lastPos = pos;
+        }
+      }
+      inputString = "";
     }
   }
+
 
   if (currentMillis - previousMillis >= interval) {
     previousMillis = currentMillis;
