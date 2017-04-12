@@ -1,6 +1,6 @@
 #ifndef SeguidorSolar_h
 #define SeguidorSolar_h
-
+#include <PID_v1.h>
 
 struct Motor {
   uint8_t direita;
@@ -23,11 +23,17 @@ struct Sensores {
   uint8_t fdc2;
 };
 
+struct Posicao {
+  uint8_t maxima;
+  uint8_t minima;
+  uint8_t atual;
+};
+
 struct Eixo {
-  Motor *motor;
-  Potenciometro *pot;
-  Sensores *sensores;
-  uint8_t posicao;
+  Motor motor;
+  Potenciometro pot;
+  Sensores sensores;
+  Posicao posicao;
 };
 
 class SeguidorSolar
@@ -39,10 +45,12 @@ class SeguidorSolar
     void mostraPotenciometro(Eixo *eixo);
     void segueLuz(Eixo *eixo);
 
-  protected:
+  private:
     void lePotenciometro(Eixo *eixo);
     void controlaMotor (Eixo *eixo, int16_t velocidade);
     void paraMotor(Motor *motor);
+
+
 };
 
 #endif

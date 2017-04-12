@@ -23,39 +23,27 @@
 
 const long interval = 10;
 
-/**********CRIAÇÃO DOS OBJETOS E DO EIXO**********/
-//cria objeto do motor do eixo que acompanha o sol diariamente
-Motor motorDiario;
-//cria objeto para o potenciometro do eixo que acompanha o sol diariamente
-Potenciometro potDiario;
-//cria os sensores do eixo diario
-Sensores senDiario;
+/**********CRIAÇÃO DOS OBJETOS**********/
 //cria o eixo que acompanha o sol diariamente
 Eixo eixoDiario;
 /***************************************************/
-
 /**********CONTROLADOR DE PLACA SOLAR**********/
 SeguidorSolar seguidor;
 
 void setup () {
   //inicia
-#if defined(DEBUG)
   Serial.begin(9600);
-#endif
   /**********INSERE OS PARÂMETROS DOS OBEJTOS**********/
-  motorDiario.direita = IN1;
-  motorDiario.esquerda = IN2;
-  motorDiario.habilita = ENA;
-  potDiario.pino = POT1;
-  senDiario.fdc1 = FDC1;
-  senDiario.fdc2 = FDC2;
-  senDiario.ldr1 = LDR1;
-  senDiario.ldr2 = LDR2;
-  eixoDiario.motor = &motorDiario;
-  eixoDiario.pot = &potDiario;
-  eixoDiario.pot->minimo = 100;
-  eixoDiario.pot->maximo = 687;
-  eixoDiario.sensores = &senDiario;
+  eixoDiario.motor.direita = IN1;
+  eixoDiario.motor.esquerda = IN2;
+  eixoDiario.motor.habilita = ENA;
+  eixoDiario.pot.pino = POT1;
+  eixoDiario.pot.minimo = 100;
+  eixoDiario.pot.maximo = 687;
+  eixoDiario.sensores.fdc1 = FDC1;
+  eixoDiario.sensores.fdc2 = FDC2;
+  eixoDiario.sensores.ldr1 = LDR1;
+  eixoDiario.sensores.ldr2 = LDR2;
   /***************************************************/
 
   /**********INICIA O EIXO**********/
@@ -64,25 +52,26 @@ void setup () {
 }
 
 void loop () {
-  static int pos;
+  static uint8_t pos;
+  static uint8_t lastPos;
   static unsigned long previousMillis = 0;
   static unsigned long previousMillis2 = 0;
   unsigned long currentMillis = millis();
-#if defined(DEBUG)
+
   if (Serial.available()) {
-    // set the brightness of the LED:
     pos = Serial.parseInt();
-    seguidor.moveParaPosicao(&eixoDiario, pos);
+    if (abs(lastPos - pos) >= 5) {
+      seguidor.moveParaPosicao(&eixoDiario, pos);
+      eixoDiario.posicao.minima = eixoDiario.posicao.atual - 5;
+      eixoDiario.posicao.maxima = eixoDiario.posicao.atual + 5;
+      lastPos = pos;
+    }
   }
 
-#endif
-
-  //  if (currentMillis - previousMillis >= interval) {
-  //    // save the last time you blinked the LED
-  //    previousMillis = currentMillis;
-  //    seguidor.segueLuz(&eixoDiario);
-  //    //Serial.println(analogRead(LDR1)-analogRead(LDR2));
-  //  }
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis = currentMillis;
+    seguidor.segueLuz(&eixoDiario);
+  }
 
 #if defined(DEBUG)
   if (currentMillis - previousMillis2 >= 1000) {
@@ -95,8 +84,4 @@ void loop () {
     seguidor.mostraPotenciometro(&eixoDiario);
   }
 #endif
-}
-
-unsigned char lerLdr(unsigned char ldr) {
-  return map(analogRead(ldr), 0, 900, 0, 100);
 }
