@@ -14,8 +14,8 @@ uint32_t extraiCodigo(char *entrada) {
   }
 
   sprintf(entrada, entrada + i + 1);
-  Serial.print("Numero: ");
-  Serial.println(tmp.toInt());
+  //Serial.print("Numero: ");
+  //Serial.println(tmp.toInt());
   return tmp.toInt();
 }
 
@@ -52,22 +52,22 @@ uint32_t porDoSol(uint16_t dia) {
 int8_t calculaPosicao(uint16_t dia, uint32_t segundo) {
   uint32_t nascerSol = nascerDoSol(dia);
   uint32_t porSol = porDoSol(dia);
-  Serial.print("Nascer do sol: ");
-  Serial.println(nascerSol);
-  Serial.print("Por do sol: ");
-  Serial.println(porSol);
+  //  Serial.print("Nascer do sol: ");
+  //  Serial.println(nascerSol);
+  //  Serial.print("Por do sol: ");
+  //  Serial.println(porSol);
   if (segundo < nascerSol || segundo > porSol) {
     return -1;
   }
 
   uint32_t segundosPorDia =  porSol - nascerSol;
   uint32_t segundosRelativos = (segundo - nascerSol) * 100 / segundosPorDia;
-  Serial.print(segundosRelativos);
-  Serial.println("% do dia.");
+  //Serial.print(segundosRelativos);
+  //Serial.println("% do dia.");
 
   if (segundosRelativos >= 0 && segundosRelativos <= 100) {
-    Serial.print(segundosRelativos);
-    Serial.println("% do dia.");
+    //Serial.print(segundosRelativos);
+    //Serial.println("% do dia.");
     return segundosRelativos;
   }
 }
