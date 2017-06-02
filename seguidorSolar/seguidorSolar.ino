@@ -70,9 +70,12 @@ void loop () {
     }
     if (inChar == '\n' || strlen(input) == 63) {
       if (strlen(input) >= 1) {
-        trataComando(input);
+        Serial.println(input);
+        if (sanitizaEntrada(input)) {
+          trataComando(input);
+        }
       }
-      input[0] = '\0';
+      sprintf(input, "");
     }
   }
 
@@ -134,9 +137,4 @@ void trataComando(char *comando) {
     default:
       break;
   }
-
-
-
 }
-
-

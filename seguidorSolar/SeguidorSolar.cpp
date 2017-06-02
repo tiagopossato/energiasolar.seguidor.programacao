@@ -124,6 +124,9 @@ void SeguidorSolar::mostraPotenciometro(Eixo *eixo) {
   Serial.print(eixo->posicao.atual);
   Serial.println("%");
 #endif
+  Serial.print("[1/");
+  Serial.print(eixo->posicao.atual);
+  Serial.println("]");
 }
 
 void SeguidorSolar::segueLuz(Eixo *eixo) {
@@ -191,7 +194,8 @@ void SeguidorSolar::controlaMotor(Eixo *eixo, int16_t velocidade) {
   this->lePotenciometro(eixo);
   if (velocidade < 0) {
     if (velocidade < -255) velocidade = -255;
-    if (digitalRead(eixo->sensores.fdc2) == false || eixo->posicao.atual < eixo->posicao.minima || eixo->posicao.atual < 1) {
+    //if (digitalRead(eixo->sensores.fdc2) == false || eixo->posicao.atual < eixo->posicao.minima || eixo->posicao.atual < 1) {
+    if (eixo->posicao.atual < eixo->posicao.minima || eixo->posicao.atual < 1) {
       this->paraMotor(&eixo->motor);
       return;
     }
@@ -204,7 +208,8 @@ void SeguidorSolar::controlaMotor(Eixo *eixo, int16_t velocidade) {
     digitalWrite (eixo->motor.esquerda, LOW);
   } else {
     if (velocidade > 255) velocidade = 255;
-    if (digitalRead(eixo->sensores.fdc1) == false || eixo->posicao.atual > eixo->posicao.maxima || eixo->posicao.atual > 99) {
+    //if (digitalRead(eixo->sensores.fdc1) == false || eixo->posicao.atual > eixo->posicao.maxima || eixo->posicao.atual > 99) {
+    if (eixo->posicao.atual > eixo->posicao.maxima || eixo->posicao.atual > 99) {
       this->paraMotor(&eixo->motor);
       return;
     }

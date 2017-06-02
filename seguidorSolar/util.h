@@ -1,6 +1,44 @@
+/**
+   Códigos de comunicação entre a placa de controle e a de medição
+*/
+#define POSICAOLESTEOESTE 1 //ENVIANDO POSICAO ATUAL DO PAINEL LESTE OESTE
+
+char tmp[63] = {};
+
 //Função para resetar o programa
 void(* resetFunc) (void) = 0;
 
+uint8_t buscaCaracter(char *entrada, char caracter)
+{
+  uint8_t pos = 0;
+  for (; pos <= strlen(entrada); pos++)
+  {
+    if (caracter == entrada[pos])
+    {
+      return pos;
+    }
+  }
+  return 255;
+}
+
+boolean sanitizaEntrada(char *entrada) {
+  uint8_t inicio;
+  uint8_t fim;
+ 
+  inicio = buscaCaracter(entrada, '[');
+  if (inicio == 255) {
+    return false;
+  }
+  fim = buscaCaracter(entrada, ']');
+  if (fim == 255) {
+    return false;
+  }
+
+  memcpy(tmp, &entrada[inicio + 1], fim - (inicio + 1));
+  sprintf(entrada, tmp);
+  sprintf(tmp, "");
+  return true;
+}
 
 uint32_t extraiCodigo(char *entrada) {
   char i = 0;
@@ -14,8 +52,6 @@ uint32_t extraiCodigo(char *entrada) {
   }
 
   sprintf(entrada, entrada + i + 1);
-  //Serial.print("Numero: ");
-  //Serial.println(tmp.toInt());
   return tmp.toInt();
 }
 
