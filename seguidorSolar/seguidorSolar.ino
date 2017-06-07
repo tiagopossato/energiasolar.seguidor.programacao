@@ -24,6 +24,8 @@
 #define ENB 6
 
 const long interval = 10;
+uint8_t ultimaPos;
+boolean seguirLuz = false;
 
 /**********CRIAÇÃO DOS OBJETOS**********/
 //cria o eixo que acompanha o sol diariamente
@@ -43,8 +45,8 @@ void setup () {
   eixoDiario.motor.esquerda = IN2;
   eixoDiario.motor.habilita = ENA;
   eixoDiario.pot.pino = POT1;
-  eixoDiario.pot.minimo = 110;
-  eixoDiario.pot.maximo = 697;
+  eixoDiario.pot.minimo = 110;//110
+  eixoDiario.pot.maximo = 697;//697
   eixoDiario.sensores.fdc1 = FDC1;
   eixoDiario.sensores.fdc2 = FDC2;
   eixoDiario.sensores.ldr1 = LDR1;
@@ -70,18 +72,21 @@ void loop () {
     }
     if (inChar == '\n' || strlen(input) == 63) {
       if (strlen(input) >= 1) {
-        Serial.println(input);
         if (sanitizaEntrada(input)) {
           trataComando(input);
         }
       }
-      sprintf(input, "");
+      for (uint8_t i = 0; i < 64; i++) {
+        input[i] = '\0';
+      }
     }
   }
 
   if (currentMillis - previousMillis >= interval) {
     previousMillis = currentMillis;
-    seguidor.segueLuz(&eixoDiario);
+    if (seguirLuz) {
+      seguidor.segueLuz(&eixoDiario);
+    }
   }
 
 #if defined(DEBUG)
@@ -108,32 +113,44 @@ void loop () {
 void trataComando(char *comando) {
   uint16_t dia;
   uint32_t segundo;
-  int8_t posicao;
-  static int8_t lastPos;
-
+  uint8_t posicao;
+  int8_t tmp;
   switch (extraiCodigo(comando)) {
-    case 1:
-      posicao = extraiCodigo(comando);
-      if (abs(lastPos - posicao) >= 3) {
-        lastPos = posicao;
-        seguidor.moveParaPosicao(&eixoDiario, posicao);
-        eixoDiario.posicao.minima = eixoDiario.posicao.atual - 5;
-        eixoDiario.posicao.maxima = eixoDiario.posicao.atual + 5;
-      }
-      break;
-    case 2:
-      dia = extraiCodigo(comando);
-      segundo = extraiCodigo(comando);
-      posicao = calculaPosicao(dia, segundo);
-      if (posicao >= 0) {
-        if (abs(lastPos - posicao) >= 3) {
-          lastPos = posicao;
+    case 1: {
+        posicao = (uint8_t)extraiCodigo(comando);
+        //arduino-1.8.2/reference/www.arduino.cc/en/Reference/Abs.html
+        tmp = ultimaPos - posicao;
+        if (abs(tmp) >= 3) {
           seguidor.moveParaPosicao(&eixoDiario, posicao);
           eixoDiario.posicao.minima = eixoDiario.posicao.atual - 5;
           eixoDiario.posicao.maxima = eixoDiario.posicao.atual + 5;
+          ultimaPos = posicao;
         }
+        break;
       }
-      break;
+    case 2: {
+        dia = extraiCodigo(comando);
+        segundo = extraiCodigo(comando);
+        /*
+           Não segue o sol entre as 20:00(72000) e as 6:00(21600)
+        */
+        if (segundo < 21600 || segundo > 72000) {
+          seguirLuz = false;
+          return;
+        }
+        seguirLuz = true;
+        posicao = (uint8_t)calculaPosicao(dia, segundo);
+        tmp = ultimaPos - posicao;
+        if (posicao >= 0) {
+          if (abs(tmp) >= 3) {
+            seguidor.moveParaPosicao(&eixoDiario, posicao);
+            eixoDiario.posicao.minima = eixoDiario.posicao.atual - 5;
+            eixoDiario.posicao.maxima = eixoDiario.posicao.atual + 5;
+            ultimaPos = posicao;
+          }
+        }
+        break;
+      }
     default:
       break;
   }

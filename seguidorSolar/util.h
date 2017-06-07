@@ -24,7 +24,7 @@ uint8_t buscaCaracter(char *entrada, char caracter)
 boolean sanitizaEntrada(char *entrada) {
   uint8_t inicio;
   uint8_t fim;
- 
+
   inicio = buscaCaracter(entrada, '[');
   if (inicio == 255) {
     return false;
@@ -36,7 +36,10 @@ boolean sanitizaEntrada(char *entrada) {
 
   memcpy(tmp, &entrada[inicio + 1], fim - (inicio + 1));
   sprintf(entrada, tmp);
-  sprintf(tmp, "");
+  sprintf(entrada, "%s", tmp);
+  for (uint8_t i = 0; i < 64; i++) {
+    tmp[i] = '\0';
+  }
   return true;
 }
 
