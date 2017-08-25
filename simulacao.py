@@ -33,12 +33,12 @@ while(True):
     try:
         x = 20000
         while(x<70000):
-            x = x + 500
-            msg = '2/1/' + str(x) + '\n'
+            x = x + 5000
+            msg = '[2/1/' + str(x) + ']\n'
             print(msg)
             portaSerial.write(bytes(msg, 'UTF-8'))
             portaSerial.flushOutput()
-            sleep(.1)
+            sleep(10)
     except KeyboardInterrupt:
         portaSerial.close()
         exit()
