@@ -15,10 +15,10 @@
 #define DEBUG
 
 #include "util.h"
-#include "SeguidorSolar.h"
-#define LDR1 A0
-#define LDR2 A1
-#define POT1 A3
+#include "./SeguidorSolar/SeguidorSolar.h"
+#define LDR1 A1
+#define LDR2 A0
+#define POT1 A2
 #define FDC1 7
 #define FDC2 8
 #define IN1 4
@@ -50,19 +50,20 @@ void setup () {
   eixo.motor.esquerda = IN2;
   eixo.motor.habilita = ENA;
   eixo.pot.pino = POT1;
-  eixo.pot.minimo = 110;//110
-  eixo.pot.maximo = 697;//697
+  eixo.pot.minimo = 200;//200
+  eixo.pot.maximo = 670;//670
   eixo.sensores.fdc1 = FDC1;
   eixo.sensores.fdc2 = FDC2;
   eixo.sensores.ldr1 = LDR1;
   eixo.sensores.ldr2 = LDR2;
+  eixo.posicao.minima = 0;
+  eixo.posicao.maxima = 100;
   /***************************************************/
 
   /**********INICIA O EIXO**********/
   seguidor.iniciaEixo(&eixo);
   //seguidor.autoVerificacao(&eixo);
 }
-
 
 void loop () {
   static unsigned long previousMillis = 0;
@@ -83,6 +84,7 @@ void loop () {
     if (inChar == '\n' || strlen(input) == 63) {
       if (strlen(input) >= 1) {
         if (sanitizaEntrada(input)) {
+          Serial.println(input);
           trataComando(input);
         }
       }
@@ -112,49 +114,58 @@ void loop () {
       dia = diaDoAno(&tm);
       segundo = segundoAtual(&tm);
 
-      String posicao = "[2/";
-      posicao += dia;
-      posicao += "/";
-      posicao += segundo;
-      posicao += "]";
-      Serial.println(posicao);
+      //      String posicao = "[2/";
+      //      posicao += dia;
+      //      posicao += "/";
+      //      posicao += segundo;
+      //      posicao += "]";
+      Serial.println(saida);
     }
 
     //Movimenta o eixo para a posicao conforme data e hora
     /*
        Não segue o sol entre as 20:00(72000) e as 6:00(21600)
     */
-    if (segundo < 21600 || segundo > 72000) {
-      seguirLuz = false;
-      return;
-    }
-    seguirLuz = true;
-    posicao = (uint8_t)calculaPosicao(dia, segundo);
-    tmp = ultimaPos - posicao;
-    if (posicao >= 0) {
-      if (abs(tmp) >= 3) {
-        seguidor.moveParaPosicao(&eixo, posicao);
-        eixo.posicao.minima = eixo.posicao.atual - 5;
-        eixo.posicao.maxima = eixo.posicao.atual + 5;
-        ultimaPos = posicao;
-      }
-    }
-    //Segue luz pelos sensores
-    if (seguirLuz) {
-      seguidor.segueLuz(&eixo);
-    }
-
+    //    if (segundo < 21600 || segundo > 72000) {
+    //      seguirLuz = false;
+    //      return;
+    //    }
+    //    seguirLuz = true;
+    //    posicao = (uint8_t)calculaPosicao(dia, segundo);
+    //    tmp = ultimaPos - posicao;
+    //    if (posicao >= 0 && posicao <= 100) {
+    //      if (abs(tmp) >= 3) {
+    //        seguidor.moveParaPosicao(&eixo, posicao);
+    //        eixo.posicao.minima = eixo.posicao.atual - 5;
+    //        eixo.posicao.maxima = eixo.posicao.atual + 5;
+    //        ultimaPos = posicao;
+    //      }
+    //    }
   }
+  //Segue luz pelos sensores
+  //    if (seguirLuz) {
+  seguidor.segueLuz(&eixo);
+  //    }
   //Fim da movimentacao do eixo
 
 #if defined(DEBUG)
   if (currentMillis - previousMillis2 >= 1000) {
     // save the last time you blinked the LED
     previousMillis2 = currentMillis;
+    uint16_t ldr1 = 0;
+    for (char i = 0; i < 10; i++) {
+      ldr1 += analogRead(LDR1);
+      delay(1);
+    }
+    uint16_t ldr2 = 0;
+    for (char i = 0; i < 10; i++) {
+      ldr2 += analogRead(LDR2);
+      delay(1);
+    }
     Serial.print("LDR1: ");
-    Serial.println(analogRead(LDR1));
+    Serial.println(ldr1 / 10);
     Serial.print("LDR2: ");
-    Serial.println(analogRead(LDR2));
+    Serial.println(ldr2 / 10);
     seguidor.mostraPotenciometro(&eixo);
   }
 #endif
@@ -179,12 +190,12 @@ void trataComando(char *comando) {
         posicao = (uint8_t)extraiCodigo(comando);
         //arduino-1.8.2/reference/www.arduino.cc/en/Reference/Abs.html
         tmp = ultimaPos - posicao;
-        if (abs(tmp) >= 3) {
-          seguidor.moveParaPosicao(&eixo, posicao);
-          eixo.posicao.minima = eixo.posicao.atual - 5;
-          eixo.posicao.maxima = eixo.posicao.atual + 5;
-          ultimaPos = posicao;
-        }
+        //if (abs(tmp) >= 3) {
+        seguidor.moveParaPosicao(&eixo, posicao);
+        // eixo.posicao.minima = eixo.posicao.atual - 5;
+        //eixo.posicao.maxima = eixo.posicao.atual + 5;
+        ultimaPos = posicao;
+        //}
         break;
       }
     //Recebe data e hora

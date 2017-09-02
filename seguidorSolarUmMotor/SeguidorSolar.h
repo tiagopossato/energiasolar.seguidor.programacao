@@ -26,7 +26,7 @@ struct Sensores {
 struct Posicao {
   uint8_t maxima;
   uint8_t minima;
-  uint8_t atual;
+  int16_t atual;
 };
 
 struct Eixo {

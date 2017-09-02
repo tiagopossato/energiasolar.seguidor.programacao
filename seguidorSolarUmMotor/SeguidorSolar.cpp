@@ -72,9 +72,9 @@ void SeguidorSolar::moveParaPosicao(Eixo *eixo, uint8_t novaPosicao) {
   unsigned long previousMillis = millis();
   //  unsigned long currentMillis = millis();
   static uint16_t timeOut = 20000;
-  double mySetpoint=0;
-  double myInput=0;
-  double myOutput=0;
+  double mySetpoint = 0;
+  double myInput = 0;
+  double myOutput = 0;
   PID myPID(&myInput, &myOutput, &mySetpoint, 2, 5, 2, DIRECT);
   myPID.SetOutputLimits(-255, 255);
   //turn the PID on
@@ -110,15 +110,16 @@ void SeguidorSolar::moveParaPosicao(Eixo *eixo, uint8_t novaPosicao) {
    salva o valor na posicao do eixo recebido como parâmetro
 */
 void SeguidorSolar::lePotenciometro(Eixo *eixo) {
-  eixo->posicao.atual = constrain(map(analogRead(eixo->pot.pino), eixo->pot.minimo, eixo->pot.maximo, 0, 100), 0, 100);
+  int soma = 0;
+  for (char i = 0; i < 10; i++) {
+    soma += analogRead(eixo->pot.pino);
+    delay(1);
+  }
+  eixo->posicao.atual = map(soma / 10, eixo->pot.minimo, eixo->pot.maximo, 0, 100);
 }
 
 void SeguidorSolar::mostraPotenciometro(Eixo *eixo) {
   this->lePotenciometro(eixo);
-  //  Serial.print("Pot: Max: ");
-  //  Serial.print(eixo->pot.maximo);
-  //  Serial.print(", Min: ");
-  //  Serial.print(eixo->pot.minimo);
 #if defined(DEBUG)
   Serial.print("Posicao atual: ");
   Serial.print(eixo->posicao.atual);
@@ -130,58 +131,34 @@ void SeguidorSolar::mostraPotenciometro(Eixo *eixo) {
 }
 
 void SeguidorSolar::segueLuz(Eixo *eixo) {
-  int16_t diferenca = analogRead(eixo->sensores.ldr1) - analogRead(eixo->sensores.ldr2);
-  if (abs(diferenca) < 5) {
+  static unsigned long lastStop;
+  int16_t velocidade = analogRead(eixo->sensores.ldr1) - analogRead(eixo->sensores.ldr2);
+  if (abs(velocidade) < 10) {
     this->paraMotor(&eixo->motor);
+    lastStop = millis();
+    return;
+  }
+  //Verifica se passou cinco segundos apos a ultima vez que parou o motor
+  if (millis() - lastStop < 5000) {
     return;
   }
 
-  if (diferenca < -50 ) {
-    this->controlaMotor(eixo, 255);
+  if (velocidade > 0) {
+    velocidade = velocidade + 120;
+    if (velocidade > 150) {
+      velocidade = 150;
+    }
+    this->controlaMotor(eixo, velocidade);
     return;
   }
-
-  if (diferenca > -50 && diferenca < -25 ) {
-    this->controlaMotor(eixo, 150);
+  if (velocidade < 0) {
+    velocidade = velocidade - 130;
+    if (velocidade < -150) {
+      velocidade = -150;
+    }
+    this->controlaMotor(eixo, velocidade);
     return;
   }
-
-  if (diferenca > -25 && diferenca < 0 ) {
-    this->controlaMotor(eixo, 100);
-    return;
-  }
-
-
-  if (diferenca > 0 && diferenca < 25 ) {
-    this->controlaMotor(eixo, -100);
-  }
-  if (diferenca > 25 && diferenca < 50 ) {
-    this->controlaMotor(eixo, -150);
-    return;
-  }
-
-  if (diferenca > 50 ) {
-    this->controlaMotor(eixo, -255);
-    return;
-  }
-
-  //  this->controlaMotor(eixo, map(diferenca, -30, 30, 255, -255));
-
-  //
-  //  static double mySetpoint;
-  //  static double myInput;
-  //  static  double myOutput;
-  //  static PID myPID(&myInput, &myOutput, &mySetpoint, 1, 0.05, 0.25, DIRECT);//modo cnservador
-  //  //static PID myPID(&myInput, &myOutput, &mySetpoint, 4, 0.2, 1, DIRECT); // modo agressivo
-  //  myPID.SetOutputLimits(-255, 255);
-  //  //turn the PID on
-  //  myPID.SetMode(AUTOMATIC);
-  //
-  //  myInput = diferenca;
-  //  mySetpoint = 0;
-  //  myPID.Compute();
-  //  this->controlaMotor(eixo, myOutput);
-
 }
 
 
@@ -191,11 +168,15 @@ void SeguidorSolar::segueLuz(Eixo *eixo) {
    valores abaixo de 0 invertem o sentido de giro do motor
 */
 void SeguidorSolar::controlaMotor(Eixo *eixo, int16_t velocidade) {
+//#if defined(DEBUG)
+//  Serial.print("Velocidade: ");
+//  Serial.println(velocidade);
+//#endif
   this->lePotenciometro(eixo);
   if (velocidade < 0) {
     if (velocidade < -255) velocidade = -255;
     //if (digitalRead(eixo->sensores.fdc2) == false || eixo->posicao.atual < eixo->posicao.minima || eixo->posicao.atual < 1) {
-    if (eixo->posicao.atual < eixo->posicao.minima || eixo->posicao.atual < 1) {
+    if (eixo->posicao.atual < eixo->posicao.minima || eixo->posicao.atual < 0) {
       this->paraMotor(&eixo->motor);
       return;
     }
@@ -209,7 +190,7 @@ void SeguidorSolar::controlaMotor(Eixo *eixo, int16_t velocidade) {
   } else {
     if (velocidade > 255) velocidade = 255;
     //if (digitalRead(eixo->sensores.fdc1) == false || eixo->posicao.atual > eixo->posicao.maxima || eixo->posicao.atual > 99) {
-    if (eixo->posicao.atual > eixo->posicao.maxima || eixo->posicao.atual > 99) {
+    if (eixo->posicao.atual > eixo->posicao.maxima || eixo->posicao.atual > 100) {
       this->paraMotor(&eixo->motor);
       return;
     }
