@@ -5,12 +5,29 @@
       posição do eixo onde existir a menor diferença entre os sensores
       e ao mesmo tempo o maior índice de incidência de luz.
 */
+
+/**
+ * Estas definições separam a programação da placa de baixo e da placa de cima.
+ * Para compilar para a placa de BAIXO, comentar a variável PLACADECIMA e descomentar a variável PLACADEBAIXO.
+ * Para compilar para a placa de CIMA, comentar a variável PLACADEBAIXO e descomentar a variavel PLACADECIMA.
+ */
+// #define PLACADEBAIXO
+#define PLACADECIMA
+
+//----BIBLIOTECAS PARA ACESSO AO RELÓGIO
+#if defined(PLACADECIMA)
+#include <Wire.h>
+#include <Time.h>
+#ifdef _WIN32
+#include <TimeLib.h>
+#endif
+#include <DS1307RTC.h>
+#endif
+
+//----BIBLIOTECAS DO PROJETO
 #include "interface.h"
 #include "posicionamento.h"
 #include "Eixo.h"
-
-// #define PLACADEBAIXO
-// #define PLACADECIMA //???
 
 //-------DEFINIÇÕES DOS PINOS---------//
 #define LDR1 A2
@@ -40,6 +57,7 @@ Eixo eixoDiario(0x00);
 Eixo eixoAnual(0x01);
 #endif
 /***************************************************/
+
 char input[24];
 
 void setup()
@@ -60,16 +78,16 @@ void setup()
   eixoDiario.lightSensors.sunset.pin = LDR2;
 /***************************************************/
 #if defined(PLACADEBAIXO)
-  eixoAnual.motor.rightPin = IN1;
-  eixoAnual.motor.leftPin = IN2;
-  eixoAnual.motor.enablePin = ENA;
-  eixoAnual.position.pin = POT1;
+  eixoAnual.motor.rightPin = ;
+  eixoAnual.motor.leftPin = ;
+  eixoAnual.motor.enablePin = ;
+  eixoAnual.position.pin = ;
   eixoAnual.position.potMin = 110;
   eixoAnual.position.potMax = 697;
-  eixoAnual.safetySensors.sunrise.pin = FDC1;
-  eixoAnual.safetySensors.sunset.pin = FDC2;
-  eixoAnual.lightSensors.sunrise.pin = LDR1;
-  eixoAnual.lightSensors.sunset.pin = LDR2;
+  eixoAnual.safetySensors.sunrise.pin = ;
+  eixoAnual.safetySensors.sunset.pin = ;
+  eixoAnual.lightSensors.sunrise.pin = ;
+  eixoAnual.lightSensors.sunset.pin = ;
 #endif
   /**********INICIA O EIXO**********/
   eixoDiario.begin();
@@ -87,6 +105,9 @@ void loop()
 
   unsigned long currentMillis = millis();
   int8_t posicao;
+#if defined(PLACADECIMA)
+  tmElements_t tm;
+#endif
 
   if (currentMillis - previousControlTime >= controlInterval)
   {
@@ -128,7 +149,22 @@ void loop()
   if (currentMillis - previousPrintTime >= 1000)
   {
     previousPrintTime = currentMillis;
-    eixoDiario.printStatus();
+// eixoDiario.printStatus();
+#if defined(PLACADECIMA)
+    //Leitura da hora
+    if (RTC.read(tm))
+    {
+      dia = diaDoAno(&tm);
+      segundo = segundoAtual(&tm);
+
+      String dataHora = "{2/";
+      dataHora += dia;
+      dataHora += "/";
+      dataHora += segundo;
+      dataHora += "}";
+      Serial.println(dataHora);
+    }
+#endif
   }
 }
 

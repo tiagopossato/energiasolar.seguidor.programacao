@@ -1,2 +1,1 @@
 build/*
-!build/seguidorSolar.ino.with_bootloader.hex

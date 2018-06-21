@@ -1,3 +1,8 @@
+#include <Time.h>
+#ifdef _WIN32
+#include <TimeLib.h>
+#endif
+
 /**
    Calcula o segundo em que o sol nasce no dia
 */
@@ -51,4 +56,35 @@ int8_t calculaPosicaoAnual(uint16_t dia)
 {
   //TODO: Implementar, retornando valor fixo
   return 50;
+}
+
+/**
+   Retorna o dia do ano a partir de 1º de Janeiro
+*/
+uint16_t diaDoAno(tmElements_t *tm) {
+  uint8_t tmp = 1;
+  uint16_t dias = tm->Day;
+  for (; tmp < tm->Month; tmp++) {
+    switch (tmp) {
+      case 1: dias += 31; break;
+      case 2: dias += 28; break;
+      case 3: dias += 31; break;
+      case 4: dias += 30; break;
+      case 5: dias += 31; break;
+      case 6: dias += 30; break;
+      case 7: dias += 31; break;
+      case 8: dias += 31; break;
+      case 9: dias += 30; break;
+      case 10: dias += 31; break;
+      case 11: dias += 30; break;
+    }
+  }
+  return dias;
+}
+
+/**
+   Calcula o segundo atual a partir da zero horas
+*/
+uint32_t segundoAtual(tmElements_t *tm) {
+  return ((uint32_t)tm->Hour * 60 * 60 ) + ((uint32_t)tm->Minute * 60 ) + (uint32_t)tm->Second;
 }
