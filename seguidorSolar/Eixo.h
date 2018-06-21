@@ -30,7 +30,7 @@ class Eixo
     uint16_t potMax;
     uint16_t potMin;
     uint16_t potValue;
-    uint8_t value; //Valor atual lido
+    int16_t value; //Valor atual lido
   };
 
   struct Sensor

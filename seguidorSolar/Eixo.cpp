@@ -57,7 +57,13 @@ void Eixo::readSensors()
 
 uint8_t Eixo::readPositionSensor()
 {
-  this->position.potValue = analogRead(this->position.pin);
+  int soma = 0;
+  for (char i = 0; i < 10; i++)
+  {
+    soma += analogRead(this->position.pin);
+    delayMicroseconds(250);
+  }
+  this->position.potValue = soma / 10;
   this->position.value = constrain(map(this->position.potValue, this->position.potMin, this->position.potMax, 0, 100), 0, 100);
   return this->position.value;
 }
@@ -196,49 +202,43 @@ void Eixo::moveTo(uint8_t newPosition)
 
 void Eixo::solarTracker()
 {
+  static unsigned long lastStop;
   this->readSensors();
-  int16_t diferenca = this->lightSensors.sunset.value - this->lightSensors.sunrise.value;
-  if (abs(diferenca) < 5)
+  int16_t velocidade = this->lightSensors.sunset.value - this->lightSensors.sunrise.value;
+  if (abs(velocidade) < 5)
   {
     this->stopMotor();
+    lastStop = millis();
+    return;
+  }
+  //Verifica se passou cinco segundos apos a ultima vez que parou o motor
+  if (millis() - lastStop < 5000)
+  {
+    return;
+  }
+  if (velocidade > 0)
+  {
+    velocidade = velocidade + 120;
+    if (velocidade > 150)
+    {
+      velocidade = 150;
+    }
+    this->controlMotor(velocidade);
     return;
   }
 
-  if (diferenca < -50)
+  if (velocidade < 0)
   {
-    this->controlMotor(255);
+    velocidade = velocidade - 130;
+    if (velocidade < -150)
+    {
+      velocidade = -150;
+    }
+    this->controlMotor(velocidade);
     return;
   }
 
-  if (diferenca > -50 && diferenca < -25)
-  {
-    this->controlMotor(150);
-    return;
-  }
-
-  if (diferenca > -25 && diferenca < 0)
-  {
-    this->controlMotor(100);
-    return;
-  }
-
-  if (diferenca > 0 && diferenca < 25)
-  {
-    this->controlMotor(-100);
-  }
-  if (diferenca > 25 && diferenca < 50)
-  {
-    this->controlMotor(-150);
-    return;
-  }
-
-  if (diferenca > 50)
-  {
-    this->controlMotor(-255);
-    return;
-  }
-
-  //  this->controlMotor(map(diferenca, -30, 30, 255, -255));
+  //  this->controlMotor(map(velocidade, -30, 30, 255, -255));
 
   //
   //  static double setpoint;
@@ -250,7 +250,7 @@ void Eixo::solarTracker()
   //  //turn the PID on
   //  myPID.SetMode(AUTOMATIC);
   //
-  //  input = diferenca;
+  //  input = velocidade;
   //  setpoint = 0;
   //  myPID.Compute();
   //  this->controlMotor(output);
@@ -276,8 +276,8 @@ void Eixo::controlMotor(int16_t speed)
       speed = -255;
     }
     if (this->safetySensors.sunrise.value == true ||
-        this->position.potValue < this->position.potMin ||
-        this->position.value < 1)
+        this->position.value < this->positionMin ||
+        this->position.value < 0)
     {
       this->stopMotor();
       return;
@@ -300,8 +300,8 @@ void Eixo::controlMotor(int16_t speed)
       speed = 255;
     }
     if (this->safetySensors.sunset.value == true ||
-        this->position.potValue > this->position.potMin ||
-        this->position.value > 99)
+        this->position.value > this->positionMax ||
+        this->position.value > 100)
     {
       this->stopMotor();
       return;

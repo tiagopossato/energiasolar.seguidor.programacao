@@ -5,10 +5,12 @@
       posição do eixo onde existir a menor diferença entre os sensores
       e ao mesmo tempo o maior índice de incidência de luz.
 */
-#include <EEPROM.h>
 #include "interface.h"
 #include "posicionamento.h"
 #include "Eixo.h"
+
+// #define PLACADEBAIXO
+// #define PLACADECIMA //???
 
 //-------DEFINIÇÕES DOS PINOS---------//
 #define LDR1 A2
@@ -33,6 +35,10 @@ uint32_t segundo;
 /**********CRIAÇÃO DOS OBJETOS**********/
 //cria o eixo que acompanha o sol diariamente
 Eixo eixoDiario(0x00);
+#if defined(PLACADEBAIXO)
+//cria o eixo que acompanha o sol diariamente
+Eixo eixoAnual(0x01);
+#endif
 /***************************************************/
 char input[24];
 
@@ -52,10 +58,26 @@ void setup()
   eixoDiario.safetySensors.sunset.pin = FDC2;
   eixoDiario.lightSensors.sunrise.pin = LDR1;
   eixoDiario.lightSensors.sunset.pin = LDR2;
-  /***************************************************/
+/***************************************************/
+#if defined(PLACADEBAIXO)
+  eixoAnual.motor.rightPin = IN1;
+  eixoAnual.motor.leftPin = IN2;
+  eixoAnual.motor.enablePin = ENA;
+  eixoAnual.position.pin = POT1;
+  eixoAnual.position.potMin = 110;
+  eixoAnual.position.potMax = 697;
+  eixoAnual.safetySensors.sunrise.pin = FDC1;
+  eixoAnual.safetySensors.sunset.pin = FDC2;
+  eixoAnual.lightSensors.sunrise.pin = LDR1;
+  eixoAnual.lightSensors.sunset.pin = LDR2;
+#endif
   /**********INICIA O EIXO**********/
   eixoDiario.begin();
-  //eixoDiario.calibratePosition();
+//eixoDiario.calibratePosition();
+#if defined(PLACADEBAIXO)
+  eixoAnual.begin();
+//eixoAnual.calibratePosition();
+#endif
 }
 
 void loop()
@@ -73,16 +95,22 @@ void loop()
     switch (eixoDiario.getControlMode())
     {
     case TIMECONTROL:
-      posicao = calculaPosicaoDiaria(dia, segundo);
-      if (posicao >= 0)
+      /**
+       * Não segue o sol entre as 20:00(72000) e as 6:00(21600)
+      */
+      if (segundo > 21600 && segundo < 72000)
       {
-        //movimenta em passos de 3%
-        if (abs(eixoDiario.setPoint - posicao) >= 3)
+        posicao = calculaPosicaoDiaria(dia, segundo);
+        if (posicao >= 0)
         {
-          eixoDiario.setPoint = posicao;
-          eixoDiario.moveTo(posicao);
-          eixoDiario.positionMin = eixoDiario.position.value - 5;
-          eixoDiario.positionMax = eixoDiario.position.value + 5;
+          //movimenta em passos de 3%
+          if (abs(eixoDiario.setPoint - posicao) >= 3)
+          {
+            eixoDiario.setPoint = posicao;
+            eixoDiario.moveTo(posicao);
+            eixoDiario.positionMin = eixoDiario.position.value - 5;
+            eixoDiario.positionMax = eixoDiario.position.value + 5;
+          }
         }
       }
       break;
@@ -153,6 +181,7 @@ void trataComando(char *comando)
 {
   int8_t posicao;
   uint8_t eixo;
+  int8_t tmp;
 
   if (!sanitizaEntrada(comando))
     return;
@@ -164,7 +193,9 @@ void trataComando(char *comando)
     posicao = extraiCodigo(comando);
     if (eixo == 1 && eixoDiario.getControlMode() == MANUALMODE)
     {
-      if (abs(eixoDiario.setPoint - posicao) >= 3)
+      //arduino-1.8.2/reference/www.arduino.cc/en/Reference/Abs.html
+      tmp = eixoDiario.setPoint - posicao;
+      if (abs(tmp) >= 3)
       {
         eixoDiario.setPoint = posicao;
         eixoDiario.moveTo(posicao);
@@ -172,10 +203,12 @@ void trataComando(char *comando)
         eixoDiario.positionMax = eixoDiario.position.value + 5;
       }
     }
-    if (eixo == 2 /*&& ????????.getControlMode() == MANUALMODE*/)
+#if defined(PLACADEBAIXO)
+    if (eixo == 2 && eixoAnual.getControlMode() == MANUALMODE)
     {
-      //um possível segundo eixo
+      //codigo aqui
     }
+#endif
     break;
   case 2:
     dia = extraiCodigo(comando);
@@ -187,10 +220,12 @@ void trataComando(char *comando)
     {
       eixoDiario.setControlMode(extraiCodigo(comando));
     }
+#if defined(PLACADEBAIXO)
     if (eixo == 2)
     {
-      //um possível segundo eixo
+      eixoAnual.setControlMode(extraiCodigo(comando));
     }
+#endif
     break;
   default:
     break;
