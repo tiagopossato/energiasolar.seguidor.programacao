@@ -27,10 +27,10 @@ class Eixo
    * Min e Max reprensentam os limites que o eixo pode atingir, 
    * podem ser definidos manualmente ou através do método calibratePosition
    */
-    uint16_t potMax;
+    uint16_t potMax; //valor máximo que o potenciometro assume em 100% do curso
     uint16_t potMin;
-    uint16_t potValue;
-    int16_t value; //Valor atual lido
+    uint16_t potValue; // 0...1024
+    int16_t value; //Valor atual lido em % (0..100) percentual de deslocamento
   };
 
   struct Sensor
@@ -57,15 +57,17 @@ public:
   LightSensors lightSensors;
   SafetySensors safetySensors;
   uint8_t setPoint;
-  uint8_t positionMax;
+  
+  //usados para definir uma faixa maxima que o painel pode se deslocar
+  uint8_t positionMax; 
   uint8_t positionMin;
 
   Eixo(uint8_t _address);
 
-  void begin();
-  void readSensors();
+  void begin(); //iniciar eixo
+  void readSensors(); //ler todos os sensores
 
-  bool calibratePosition();
+  bool calibratePosition(); //
   void moveTo(uint8_t newPosition);
   void printStatus();
   void solarTracker();

@@ -49,8 +49,8 @@ int8_t calculaPosicaoDiaria(uint16_t dia, uint32_t segundo)
 }
 
 /**
- * Calcula posição do painel em relação à época do ano
- */
+   Calcula posição do painel em relação à época do ano
+*/
 
 int8_t calculaPosicaoAnual(uint16_t dia)
 {
@@ -88,3 +88,28 @@ uint16_t diaDoAno(tmElements_t *tm) {
 uint32_t segundoAtual(tmElements_t *tm) {
   return ((uint32_t)tm->Hour * 60 * 60 ) + ((uint32_t)tm->Minute * 60 ) + (uint32_t)tm->Second;
 }
+
+void calculaAngulo(tmElements_t *tm) {
+  // Get julian date.
+  uint16_t iJulianDate = diaDoAno(tm);
+  float fLatitude = -27.1234;
+  float fLongitude = -51.2345;
+  float fTimeZone = -3;
+
+  ////////////////////////////////////////////////////////////
+  // CALCULATE SOLAR VALUES
+  ////////////////////////////////////////////////////////////
+  // Calculate solar declination as per Carruthers et al.
+  float t = 2 * 3.1415 * ((iJulianDate - 1) / 365.0);
+  float fDeclination = (0.322003
+                  - 22.984 * cos(t)
+                  - 0.357898 * cos(2 * t)
+                  - 0.14398 * cos(3 * t)
+                  + 3.94638 * sin(t)
+                  + 0.019334 * sin(2 * t)
+                  + 0.05928 * sin(3 * t)
+                 );
+
+}
+
+

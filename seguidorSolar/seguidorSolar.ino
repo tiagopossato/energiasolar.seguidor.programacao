@@ -7,10 +7,10 @@
 */
 
 /**
- * Estas definições separam a programação da placa de baixo e da placa de cima.
- * Para compilar para a placa de BAIXO, comentar a variável PLACADECIMA e descomentar a variável PLACADEBAIXO.
- * Para compilar para a placa de CIMA, comentar a variável PLACADEBAIXO e descomentar a variavel PLACADECIMA.
- */
+   Estas definições separam a programação da placa de baixo e da placa de cima.
+   Para compilar para a placa de BAIXO, comentar a variável PLACADECIMA e descomentar a variável PLACADEBAIXO.
+   Para compilar para a placa de CIMA, comentar a variável PLACADEBAIXO e descomentar a variavel PLACADECIMA.
+*/
 // #define PLACADEBAIXO
 #define PLACADECIMA
 
@@ -30,22 +30,22 @@
 #include "Eixo.h"
 
 //-------DEFINIÇÕES DOS PINOS---------//
-#define LDR1 A2
-#define LDR2 A3
-#define POT1 A4
-#define FDC1 5
-#define FDC2 4
-#define IN1 13
-#define IN2 12
-#define ENA 9
+#define LDR1 A0
+#define LDR2 A1
+#define POT1 A2
+#define FDC1 7
+#define FDC2 8
+#define IN1 5
+#define IN2 4
+#define ENA 6
 
 const long controlInterval = 10;
 
 /**
- * DIA E HORA PARA O CONTROLE POR TEMPO
- * Essas variáveis devem ser preenchidas 
- * pela leitura do relógio ou através da porta Serial
- */
+   DIA E HORA PARA O CONTROLE POR TEMPO
+   Essas variáveis devem ser preenchidas
+   pela leitura do relógio ou através da porta Serial
+*/
 uint16_t dia;
 uint32_t segundo;
 
@@ -70,20 +70,23 @@ void setup()
   eixoDiario.motor.leftPin = IN2;
   eixoDiario.motor.enablePin = ENA;
   eixoDiario.position.pin = POT1;
-  eixoDiario.position.potMin = 110;
-  eixoDiario.position.potMax = 697;
+  eixoDiario.position.potMin = 0;
+  eixoDiario.position.potMax = 1024;
   eixoDiario.safetySensors.sunrise.pin = FDC1;
   eixoDiario.safetySensors.sunset.pin = FDC2;
   eixoDiario.lightSensors.sunrise.pin = LDR1;
   eixoDiario.lightSensors.sunset.pin = LDR2;
-/***************************************************/
+  eixoDiario.setPoint = 255;
+  eixoDiario.positionMin = 0;
+  eixoDiario.positionMax = 100;
+  /***************************************************/
 #if defined(PLACADEBAIXO)
   eixoAnual.motor.rightPin = ;
   eixoAnual.motor.leftPin = ;
   eixoAnual.motor.enablePin = ;
   eixoAnual.position.pin = ;
-  eixoAnual.position.potMin = 110;
-  eixoAnual.position.potMax = 697;
+  eixoAnual.position.potMin = 0;
+  eixoAnual.position.potMax = 1024;
   eixoAnual.safetySensors.sunrise.pin = ;
   eixoAnual.safetySensors.sunset.pin = ;
   eixoAnual.lightSensors.sunrise.pin = ;
@@ -91,10 +94,10 @@ void setup()
 #endif
   /**********INICIA O EIXO**********/
   eixoDiario.begin();
-//eixoDiario.calibratePosition();
+  //eixoDiario.calibratePosition();
 #if defined(PLACADEBAIXO)
   eixoAnual.begin();
-//eixoAnual.calibratePosition();
+  //eixoAnual.calibratePosition();
 #endif
 }
 
@@ -105,51 +108,52 @@ void loop()
 
   unsigned long currentMillis = millis();
   int8_t posicao;
+
 #if defined(PLACADECIMA)
-  tmElements_t tm;
+  tmElements_t tm; //leitura do relogioa
 #endif
 
   if (currentMillis - previousControlTime >= controlInterval)
   {
     previousControlTime = currentMillis;
     eixoDiario.readSensors();
-    switch (eixoDiario.getControlMode())
-    {
-    case TIMECONTROL:
-      /**
-       * Não segue o sol entre as 20:00(72000) e as 6:00(21600)
-      */
-      if (segundo > 21600 && segundo < 72000)
-      {
-        posicao = calculaPosicaoDiaria(dia, segundo);
-        if (posicao >= 0)
-        {
-          //movimenta em passos de 3%
-          if (abs(eixoDiario.setPoint - posicao) >= 3)
-          {
-            eixoDiario.setPoint = posicao;
-            eixoDiario.moveTo(posicao);
-            eixoDiario.positionMin = eixoDiario.position.value - 5;
-            eixoDiario.positionMax = eixoDiario.position.value + 5;
-          }
-        }
-      }
-      break;
-    case SOLARTRACKER:
-      eixoDiario.solarTracker();
-      break;
-    case HYBRID:
-      //faz alguma coisa
-      break;
-    default:
-      break;
-    }
+    //    switch (eixoDiario.getControlMode())
+    //    {
+    //      case TIMECONTROL:
+    //        /**
+    //           Não segue o sol entre as 20:00(72000) e as 6:00(21600)
+    //        */
+    //        if (segundo > 21600 && segundo < 72000)
+    //        {
+    //          posicao = calculaPosicaoDiaria(dia, segundo);
+    //          if (posicao >= 0)
+    //          {
+    //            //movimenta em passos de 3%
+    //            if (abs(eixoDiario.setPoint - posicao) >= 3)
+    //            {
+    //              eixoDiario.setPoint = posicao;
+    //              eixoDiario.moveTo(posicao);
+    //              eixoDiario.positionMin = eixoDiario.position.value - 5;
+    //              eixoDiario.positionMax = eixoDiario.position.value + 5;
+    //            }
+    //          }
+    //        }
+    //        break;
+    //      case SOLARTRACKER:
+    //        eixoDiario.solarTracker();
+    //        break;
+    //      case HYBRID:
+    //        //faz alguma coisa
+    //        break;
+    //      default:
+    //        break;
+    //    }
   }
 
   if (currentMillis - previousPrintTime >= 1000)
   {
     previousPrintTime = currentMillis;
-// eixoDiario.printStatus();
+    eixoDiario.printStatus();
 #if defined(PLACADECIMA)
     //Leitura da hora
     if (RTC.read(tm))
@@ -187,6 +191,7 @@ void serialEvent()
       if (strlen(input) >= 1)
       {
         trataComando(input);
+        Serial.println("tratou");
       }
       for (uint8_t i = 0; i < 24; i++)
       {
@@ -199,7 +204,7 @@ void serialEvent()
 /**
    Trata os comandos recebidos via porta serial
    LISTA DE COMANDOS
-   {1/[eixo]/[posicao]} -> Mova o painel para a posicao (em porcentagem). 
+   {1/[eixo]/[posicao]} -> Mova o painel para a posicao (em porcentagem).
                     Ex.: {1:50}
    {2/[dia]/[segundos]} -> informa para a placa:
                           O dia atual, a de 1 a 365, a partir de 1º de janeiro.
@@ -210,12 +215,13 @@ void serialEvent()
                         1: MANUAL
                         2: SOLARTRACKER
                         3: TIMECONTROL
+                        4:
                         Ex.: {3/2}
                         (Eixo passa a rastrear o sol)
 */
 void trataComando(char *comando)
 {
-  int8_t posicao;
+  uint8_t posicao;
   uint8_t eixo;
   int8_t tmp;
 
@@ -224,46 +230,46 @@ void trataComando(char *comando)
 
   switch (extraiCodigo(comando))
   {
-  case 1:
-    eixo = extraiCodigo(comando);
-    posicao = extraiCodigo(comando);
-    if (eixo == 1 && eixoDiario.getControlMode() == MANUALMODE)
-    {
-      //arduino-1.8.2/reference/www.arduino.cc/en/Reference/Abs.html
-      tmp = eixoDiario.setPoint - posicao;
-      if (abs(tmp) >= 3)
+    case 1:
+      eixo = (uint8_t)extraiCodigo(comando);
+      posicao = (uint8_t)extraiCodigo(comando);
+      if (eixo == 1 && eixoDiario.getControlMode() == MANUALMODE)
       {
+        //arduino-1.8.2/reference/www.arduino.cc/en/Reference/Abs.html
+        //        tmp = eixoDiario.setPoint - posicao;
+        //        if (abs(tmp) >= 3)
+        //        {
         eixoDiario.setPoint = posicao;
         eixoDiario.moveTo(posicao);
-        eixoDiario.positionMin = eixoDiario.position.value - 5;
-        eixoDiario.positionMax = eixoDiario.position.value + 5;
+        //        eixoDiario.positionMin = eixoDiario.position.value - 5;
+        //        eixoDiario.positionMax = eixoDiario.position.value + 5;
+        //        }
       }
-    }
 #if defined(PLACADEBAIXO)
-    if (eixo == 2 && eixoAnual.getControlMode() == MANUALMODE)
-    {
-      //codigo aqui
-    }
+      if (eixo == 2 && eixoAnual.getControlMode() == MANUALMODE)
+      {
+        //codigo aqui
+      }
 #endif
-    break;
-  case 2:
-    dia = extraiCodigo(comando);
-    segundo = extraiCodigo(comando);
-    break;
-  case 3:
-    eixo = extraiCodigo(comando);
-    if (eixo == 1)
-    {
-      eixoDiario.setControlMode(extraiCodigo(comando));
-    }
+      break;
+    case 2:
+      dia = extraiCodigo(comando);
+      segundo = extraiCodigo(comando);
+      break;
+    case 3:
+      eixo = extraiCodigo(comando);
+      if (eixo == 1)
+      {
+        eixoDiario.setControlMode(extraiCodigo(comando));
+      }
 #if defined(PLACADEBAIXO)
-    if (eixo == 2)
-    {
-      eixoAnual.setControlMode(extraiCodigo(comando));
-    }
+      if (eixo == 2)
+      {
+        eixoAnual.setControlMode(extraiCodigo(comando));
+      }
 #endif
-    break;
-  default:
-    break;
+      break;
+    default:
+      break;
   }
 }

@@ -41,17 +41,16 @@ bool sanitizaEntrada(char *entrada)
 
 uint32_t extraiCodigo(char *entrada)
 {
-  unsigned char i = 0;
-  String buffer;
-  buffer.reserve(5);
-  buffer = "";
-  for (i = 0; i <= 5; i++)
+  uint8_t i = 0;
+  char bufferTmp[6] = {'\0', '\0', '\0', '\0', '\0', '\0'};
+  uint8_t len = strlen(entrada) <= 5 ? strlen(entrada) : 5; //limita a variável a 5 ou menos
+  for (i = 0; i <= len; i++)
   {
-    if (entrada[i] == '/')
+    if (entrada[i] == '/') {
       break;
-    buffer += entrada[i];
+    }
+    bufferTmp[i] = entrada[i];
   }
   sprintf(entrada, entrada + i + 1);
-  buffer = buffer.substring(1, buffer.length() - 1);
-  return buffer.toInt();
+  return strtoul(bufferTmp, NULL, 10);
 }

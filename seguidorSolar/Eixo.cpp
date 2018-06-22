@@ -6,6 +6,7 @@
 #include <EEPROM.h>
 #include "Eixo.h"
 #include <PID_v1.h>
+
 #define DEBUG
 
 Eixo::Eixo(uint8_t _address)
@@ -42,7 +43,7 @@ void Eixo::setControlMode(uint8_t _controlMode)
       _controlMode != TIMECONTROL &&
       _controlMode != HYBRID)
   {
-    _controlMode = MANUAL;
+    _controlMode = MANUALMODE;
   }
   EEPROM.update(address, _controlMode);
   controlMode = _controlMode;
@@ -136,8 +137,6 @@ void Eixo::moveTo(uint8_t newPosition)
 {
   if (newPosition > 100)
     newPosition = 100;
-  if (newPosition < 1)
-    newPosition = 0;
 
   uint8_t lastMin = this->positionMin;
   uint8_t lastMax = this->positionMax;
@@ -216,6 +215,7 @@ void Eixo::solarTracker()
   {
     return;
   }
+
   if (velocidade > 0)
   {
     velocidade = velocidade + 120;
@@ -360,5 +360,7 @@ void Eixo::printStatus()
   Serial.print(this->safetySensors.sunrise.value);
   Serial.print(F(", sunset -> "));
   Serial.println(this->safetySensors.sunset.value);
+  Serial.print(F("Control Mode -> "));
+  Serial.println(this->getControlMode());
   espacador();
 }
